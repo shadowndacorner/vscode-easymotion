@@ -3,7 +3,7 @@
 	"displayName": "EasyMotion",
 	"description": "",
 	"publisher": "shadowndacorner",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -11,14 +11,51 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:vscode-easymotion.easyMotionJump"
+		"onCommand:vscode-easymotion.jumpToWord",
+		"onCommand:vscode-easymotion.jumpToEndOfWord",
+		"onCommand:vscode-easymotion.backspaceJumpMelody",
+		"onCommand:vscode-easymotion.cancelJump"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "vscode-easymotion.easyMotionJump",
-				"title": "EasyMotion Jump"
+				"title": "EasyMotion: Jump To Word",
+				"command": "vscode-easymotion.jumpToWord"
+			},
+			{
+				"title": "EasyMotion: Jump To End Of Word",
+				"command": "vscode-easymotion.jumpToEndOfWord"
+			},
+			{
+				"title": "EasyMotion: Cancel Jump",
+				"command": "vscode-easymotion.backspaceJumpMelody"
+			},
+			{
+				"title": "EasyMotion: Cancel Jump",
+				"command": "vscode-easymotion.cancelJump"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "vscode-easymotion.jumpToWord",
+				"key": "alt+/",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "vscode-easymotion.jumpToEndOfWord",
+				"key": "alt+shift+/",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "vscode-easymotion.backspaceJumpMelody",
+				"key": "backspace",
+				"when": "vscodeEasyMotionJumping"
+			},
+			{
+				"command": "vscode-easymotion.cancelJump",
+				"key": "escape",
+				"when": "vscodeEasyMotionJumping"
 			}
 		],
 		"configuration": {

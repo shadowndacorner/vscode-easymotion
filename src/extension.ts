@@ -8,6 +8,8 @@ import processCommand, { ActiveCommandContext, Configuration } from './command';
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) 
 {
+    console.log('Easy motion initializing...');
+
     const unfocusedTextDecoration = vscode.window.createTextEditorDecorationType({
         color: '#777777',
         fontWeight: '0'
@@ -22,23 +24,78 @@ export function activate(context: vscode.ExtensionContext)
     
     let commandContext : ActiveCommandContext | null = null;
 
-    // Command
-    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.easyMotionJump', async () => 
+    const startJump = async (editor: vscode.TextEditor, context: ActiveCommandContext)=>
+    {
+        if (activePromise) return;
+
+        vscode.commands.executeCommand('setContext', 'vscodeEasyMotionJumping', true);
+        activePromise = processCommand(editor, config, context);
+        await activePromise;
+        activePromise = null;
+        commandContext = null;
+    };
+
+    const exitJump = ()=>
+    {
+        vscode.commands.executeCommand('setContext', 'vscodeEasyMotionJumping', false);
+        if (commandContext)
+        {
+            commandContext.cancel();
+        }
+
+        activePromise = null;
+        commandContext = null;
+    };
+
+    // Jump to Word Command
+    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.jumpToWord', async () => 
     {
         const editor = vscode.window.activeTextEditor;
         if (editor)
         {
-            if (activePromise) return;
-
             commandContext = new ActiveCommandContext;
-            activePromise = processCommand(editor, config, commandContext);
-            await activePromise;
-            activePromise = null;
-            commandContext = null;
+            await startJump(editor, commandContext);
         }
         else
         {
             vscode.window.showErrorMessage('You can only jump with an active text editor.');
+        }
+    }));
+
+    // Jump to End of Word Command
+    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.jumpToEndOfWord', async () => 
+    {
+        const editor = vscode.window.activeTextEditor;
+        if (editor)
+        {
+            commandContext = new ActiveCommandContext;
+            commandContext.usingEndOfWord = true;
+            await startJump(editor, commandContext);
+        }
+        else
+        {
+            vscode.window.showErrorMessage('You can only jump with an active text editor.');
+        }
+    }));
+
+    // Cancel
+    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.cancelJump', exitJump));
+
+    // Backspace support (TODO: Is there a better way to detect this?)
+    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.backspaceJumpMelody', ()=>
+    {
+        if (commandContext && commandContext.keyPromiseResolver)
+        {
+            if (commandContext.keyMelody.length === 0)
+            {
+                exitJump();
+                return;
+            }
+            else
+            {
+                commandContext.keyPromiseResolver(-1);
+                return;
+            }
         }
     }));
 
@@ -56,12 +113,7 @@ export function activate(context: vscode.ExtensionContext)
     
     context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(event => 
     {
-        if (commandContext)
-        {
-            commandContext.cancel();
-        }
-        activePromise = null;
-        commandContext = null;
+        exitJump();
     }));
 
     // TODO: Make a command that triggers the mode
