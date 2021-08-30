@@ -19,6 +19,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 10.x
+    - run: npm install -g vsce
     - run: npm install
     - name: Publish
       run: npm run deploy
