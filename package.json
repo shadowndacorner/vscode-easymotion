@@ -1,7 +1,8 @@
 {
 	"name": "vscode-easymotion",
-	"displayName": "vscode-easymotion",
+	"displayName": "EasyMotion",
 	"description": "",
+	"publisher": "shadowndacorner",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.59.0"
@@ -19,7 +20,20 @@
 				"command": "vscode-easymotion.easyMotionJump",
 				"title": "EasyMotion Jump"
 			}
-		]
+		],
+		"configuration": {
+			"type": "object",
+			"title": "EasyMotion Configuration",
+			"properties": {
+			}
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/shadowndacorner/vscode-easymotion"
+	},
+	"bugs": {
+		"url": "https://github.com/shadowndacorner/vscode-easymotion/issues"
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
