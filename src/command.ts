@@ -48,7 +48,7 @@ function findCandidatePositions(editor: vscode.TextEditor, context: ActiveComman
     const positions : Position[] = [];
     for(const range of editor.visibleRanges)
     {
-        for(let lineIndex = range.start.line; lineIndex < range.end.line; lineIndex++)
+        for(let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex++)
         {
             const line = editor.document.lineAt(lineIndex);
             
@@ -106,8 +106,11 @@ function findCandidatePositions(editor: vscode.TextEditor, context: ActiveComman
         }
     }
 
-    const singleCharacterSet = 'fjrudkeislwoaqghty;p';
-    const doubleCharacterSet = 'vncmx,z.bn';
+    // Tuned these keys by hands based on an American English keyboard.
+    // This is a good candidate for configuration so that we can better
+    // support other keyboard layouts.
+    const singleCharacterSet = 'fjrudkeislwoaqghtyp';
+    const doubleCharacterSet = 'vncmxzb,;\'[*+-';
 
     const selection = editor.selection;
     const sorted = positions.sort((a, b)=>
