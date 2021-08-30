@@ -2,7 +2,7 @@
 	"name": "vscode-easymotion",
 	"displayName": "EasyMotion",
 	"description": "",
-	"icon": "https://raw.githubusercontent.com/shadowndacorner/vscode-easymotion/master/images/logo.png",
+	"icon": "images/logo.png",
 	"publisher": "shadowndacorner",
 	"version": "0.0.3",
 	"engines": {
