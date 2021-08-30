@@ -19,6 +19,8 @@ While in jump mode, pressing backspace will undo the last character entered for 
 |`vscode-easymotion.backspaceJumpMelody`|`backspace`|
 |`vscode-easymotion.cancelJump`|`escape`|
 
+To change key bindings, simply reassign them in the Visual Studio Code Keybindings configuration (either by editing the JSON directly or in the UI).
+
 ## Configuration Options
 
-This extension currenetly does not provide any configuration options.  Open an issue on GitHub to suggest anything that you would like to be configurable.
+Aside from the configurable keybindings, this extension currenetly does not provide any configuration options.  Open an issue on GitHub to suggest anything that you would like to be configurable.

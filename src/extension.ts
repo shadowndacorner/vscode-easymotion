@@ -33,6 +33,7 @@ export function activate(context: vscode.ExtensionContext)
         await activePromise;
         activePromise = null;
         commandContext = null;
+        vscode.commands.executeCommand('setContext', 'vscodeEasyMotionJumping', false);
     };
 
     const exitJump = ()=>

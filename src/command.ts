@@ -266,6 +266,7 @@ export default async function processCommand(editor: vscode.TextEditor, config: 
 
             if (key === null)
             {
+                filteredPositions = [];
                 break;
             }
 
@@ -313,7 +314,7 @@ export default async function processCommand(editor: vscode.TextEditor, config: 
         
         clearDecorations(config, editor);
 
-        if (filteredPositions.length > 0)
+        if (filteredPositions.length === 1)
         {
             const found = filteredPositions[0];
 
