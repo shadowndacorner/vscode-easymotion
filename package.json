@@ -63,6 +63,11 @@
 			"type": "object",
 			"title": "EasyMotion Configuration",
 			"properties": {
+				"vscode-easymotion.allowJumpingToWordlessLines":{
+					"type": "boolean",
+					"default": true,
+					"description": "When enabled, lines that do not contain any words will include a jump point at the end of the line"
+				}
 			}
 		}
 	},

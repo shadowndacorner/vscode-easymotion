@@ -20,7 +20,14 @@ export function activate(context: vscode.ExtensionContext)
     });
 
     let activePromise : Promise<void> | null = null;
-    const config = new Configuration(unfocusedTextDecoration, textDecoration);
+
+    const vsConfigOptions = vscode.workspace.getConfiguration('vscode-easymotion');
+    const config = new Configuration
+    (
+        unfocusedTextDecoration,
+        textDecoration,
+        vsConfigOptions.get<boolean>('allowJumpingToWordlessLines', true)
+    );
     
     let commandContext : ActiveCommandContext | null = null;
 

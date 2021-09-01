@@ -1,6 +1,6 @@
 # EasyMotion for Visual Studio Code
 
-This extension implements a simplified version of the [EasyMotion plugin for Vim](https://github.com/easymotion/vim-easymotion) for VS Code.  It supports jumping to the start and end of words based on the provided commands.
+This extension implements a simplified version of the [EasyMotion plugin for Vim](https://github.com/easymotion/vim-easymotion) for VS Code.  It supports jumping to the start and end of words based on the provided commands, as well as jumping to lines without words.
 
 ## Usage
 
@@ -8,7 +8,7 @@ This extension provides the default key bindings `alt+/` for jumping to a word a
 
 By default, `escape` exits jump mode without changing the cursor position/selection.
 
-While in jump mode, pressing backspace will undo the last character entered for the jump (eg if you want to jump to `vf` but instead type `b`, pressing backspace reveals the `v` characters again).  If no characters have been entered, thene it behaves in the same way as `escape`.
+While in jump mode, pressing backspace will undo the last character entered for the jump (eg if you want to jump to `vf` but instead type `b`, pressing backspace reveals the `v` characters again).  If no characters have been entered, then it behaves in the same way as `escape`.
 
 ## Commands
 
@@ -23,4 +23,8 @@ To change key bindings, simply reassign them in the Visual Studio Code Keybindin
 
 ## Configuration Options
 
-Aside from the configurable keybindings, this extension currenetly does not provide any configuration options.  Open an issue on GitHub to suggest anything that you would like to be configurable.
+Aside from the configurable keybindings, this extension exposes the following configuration options...
+
+|Option|Default Value|Description|
+|-|-|-|
+|vscode-easymotion.allowJumpingToWordlessLines|true|When enabled, lines that do not contain any words will include a jump point at the end of the line

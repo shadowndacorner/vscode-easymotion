@@ -43,7 +43,7 @@ function isValidIdentifierCharacter(c: number)
     return isCharAlpha(c) || isCharNumber(c) || isCharUnderscore(c);
 }
 
-function findCandidatePositions(editor: vscode.TextEditor, context: ActiveCommandContext)
+function findCandidatePositions(editor: vscode.TextEditor, context: ActiveCommandContext, config: Configuration)
 {
     const positions : Position[] = [];
     for(const range of editor.visibleRanges)
@@ -51,17 +51,19 @@ function findCandidatePositions(editor: vscode.TextEditor, context: ActiveComman
         for(let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex++)
         {
             const line = editor.document.lineAt(lineIndex);
-            
+
+            let didFindAnyWords = false;
             let currentIdentifierStart : number | null = null;
             for(let i = line.firstNonWhitespaceCharacterIndex; i < line.text.length; ++i)
             {
                 const c = line.text.charCodeAt(i);
-
+                
                 if (currentIdentifierStart === null)
                 {
                     if (isCharWhitespace(c)) continue;
                     if (isValidIdentifierCharacter(c))
                     {
+                        didFindAnyWords = true;
                         currentIdentifierStart = i;
                     }
                     // TODO: Should we have a separate, symbols-only mode?
@@ -102,6 +104,20 @@ function findCandidatePositions(editor: vscode.TextEditor, context: ActiveComman
                     positions.push(pos);
                 }
                 currentIdentifierStart = null;
+            }
+
+            // If there were no words in the line and the line is non-empty, then add it as a jump position
+            if (!didFindAnyWords && config.AllowJumpingToWordlessLine)
+            {
+                const pos = new Position();
+                pos.line = lineIndex;
+                pos.offset = line.text.length;
+                    
+                // Don't bother pushing the position if it's the same as the cursor
+                if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
+                {
+                    positions.push(pos);
+                }
             }
         }
     }
@@ -216,14 +232,16 @@ function decoratePositions(config: Configuration, context: ActiveCommandContext,
 
 export class Configuration
 {
-    constructor(unfocused: vscode.TextEditorDecorationType, decoration: vscode.TextEditorDecorationType)
+    constructor(unfocused: vscode.TextEditorDecorationType, decoration: vscode.TextEditorDecorationType, allowJumpToWordlessLine: boolean)
     {
         this.UnfocusedDecoration = unfocused;
         this.Decoration = decoration;
+        this.AllowJumpingToWordlessLine = allowJumpToWordlessLine;
     }
 
     UnfocusedDecoration: vscode.TextEditorDecorationType;
     Decoration: vscode.TextEditorDecorationType;
+    AllowJumpingToWordlessLine: boolean;
 }
 
 export class ActiveCommandContext
@@ -247,7 +265,7 @@ export default async function processCommand(editor: vscode.TextEditor, config: 
     if (editor)
     {
         const start = new Date();
-        const positions = findCandidatePositions(editor, context);
+        const positions = findCandidatePositions(editor, context, config);
         console.log(`${(new Date().getTime() - start.getTime()) / 1000} seconds to generate candidate positions, ${positions.length} found`);
 
         let filteredPositions = positions;
