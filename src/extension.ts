@@ -123,13 +123,6 @@ export function activate(context: vscode.ExtensionContext)
     {
         exitJump();
     }));
-
-    // TODO: Make a command that triggers the mode
-    // TODO: Select the start of words
-    // TODO: Decorate them
-    // TODO: Darken the rest of the document
-    // TODO: Jump the cursor when you type one of the things
-    // TODO: 
 }
 
 // this method is called when your extension is deactivated
