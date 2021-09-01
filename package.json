@@ -4,7 +4,7 @@
 	"description": "",
 	"icon": "images/logo.png",
 	"publisher": "shadowndacorner",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
