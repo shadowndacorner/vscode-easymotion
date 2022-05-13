@@ -4,9 +4,8 @@ export enum SearchMode
 {
     TokenStart,
     TokenEnd,
-    // TODO: Later
-    // WordStart,
-    // WordEnd
+    InnerWords,
+    All,
     Count
 }
 
@@ -53,30 +52,42 @@ function isValidIdentifierCharacter(c: number)
     return isCharAlpha(c) || isCharNumber(c) || isCharUnderscore(c);
 }
 
+function isWordChangeBetweenCharacters(c1: number, c2: number)
+{
+    return (isCharAlpha(c1) !== isCharAlpha(c2))
+        || (isCharNumber(c1) !== isCharNumber(c2))
+        || (isCharLowerAlpha(c1) && isCharUpperAlpha(c2))
+    ;
+    // return isCharAlpha(c) || isCharNumber(c) || isCharUnderscore(c);
+}
+
 function findCandidatePositions(editor: vscode.TextEditor, context: ActiveCommandContext, config: Configuration)
 {
+    const start = new Date();
     const positions : Position[] = [];
-    for(const range of editor.visibleRanges)
+    try
     {
-        for(let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex++)
+        for(const range of editor.visibleRanges)
         {
-            const line = editor.document.lineAt(lineIndex);
-
-            let didFindAnyWords = false;
-            let currentIdentifierStart : number | null = null;
-            for(let i = line.firstNonWhitespaceCharacterIndex; i < line.text.length; ++i)
+            for(let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex++)
             {
-                const c = line.text.charCodeAt(i);
-                
-                if (currentIdentifierStart === null)
+                const line = editor.document.lineAt(lineIndex);
+
+                let didFindAnyWords = false;
+                let tokenStart : number | null = null;
+                for(let lineCursor = line.firstNonWhitespaceCharacterIndex; lineCursor <= line.text.length; ++lineCursor)
                 {
-                    if (isCharWhitespace(c)) continue;
-                    if (isValidIdentifierCharacter(c))
+                    const c = lineCursor === line.text.length ? '\n'.charCodeAt(0) : line.text.charCodeAt(lineCursor);
+                
+                    if (tokenStart === null)
                     {
-                        didFindAnyWords = true;
-                        currentIdentifierStart = i;
-                    }
-                    // TODO: Should we have a separate, symbols-only mode?
+                        if (isCharWhitespace(c)) continue;
+                        if (isValidIdentifierCharacter(c))
+                        {
+                            didFindAnyWords = true;
+                            tokenStart = lineCursor;
+                        }
+                        // TODO: Should we have a separate, symbols-only mode?
                     /*
                     else 
                     {
@@ -85,101 +96,177 @@ function findCandidatePositions(editor: vscode.TextEditor, context: ActiveComman
                         pos.offset = i;
                         positions.push(pos);
                     }*/
+                    }
+                    else if (!isValidIdentifierCharacter(c))
+                    {
+                        switch(context.searchMode)
+                        {
+                        case SearchMode.TokenStart:
+                        case SearchMode.TokenEnd:
+                        {
+                            const pos = new Position();
+                            pos.line = lineIndex;
+                            pos.offset = context.searchMode === SearchMode.TokenEnd ? lineCursor : tokenStart;
+                        
+                            // Don't bother pushing the position if it's the same as the cursor
+                            if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
+                            {
+                                positions.push(pos);
+                            }
+                            break;
+                        }
+                        case SearchMode.InnerWords:
+                        case SearchMode.All:
+                        // case SearchMode.WordEnd:
+                        {
+                            console.log(`searching for words in token \`${line.text.substring(tokenStart, lineCursor)}\``);
+                            let tempPositions: Position[] = [];
+                            if (context.searchMode === SearchMode.All)
+                            {
+                                {
+                                    const pos = new Position();
+                                    pos.line = lineIndex;
+                                    pos.offset = tokenStart;
+                        
+                                    // Don't bother pushing the position if it's the same as the cursor
+                                    if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
+                                    {
+                                        tempPositions.push(pos);
+                                    }
+                                }
+                                {
+                                    const pos = new Position();
+                                    pos.line = lineIndex;
+                                    pos.offset = lineCursor;
+                            
+                                    // Don't bother pushing the position if it's the same as the cursor
+                                    if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
+                                    {
+                                        positions.push(pos);
+                                    }
+                                }
+                            }
+                        
+                            // Detect word start/end positions in the token
+                            let wordStart = tokenStart;
+                            let prevWordChar = line.text.charCodeAt(wordStart);
+                            for(let tokenCursor = tokenStart + 1; tokenCursor < lineCursor; ++tokenCursor)
+                            {
+                                const wordChar = line.text.charCodeAt(tokenCursor);
+                                if (isWordChangeBetweenCharacters(prevWordChar, wordChar))
+                                {
+                                    const pos = new Position();
+                                    pos.line = lineIndex;
+                                    // pos.offset = context.searchMode === SearchMode.WordEnd ? tokenCursor : wordStart;
+                                    pos.offset = tokenCursor;
+                                
+                                    // console.log(`${pos.offset} change detected at offset ${tokenCursor - tokenStart} (${prevWordChar} -> ${wordChar}), emitting @ ${wordStart}`);
+                                    tempPositions.push(pos);
+                                    wordStart = tokenCursor;
+                                }
+                                prevWordChar = wordChar;
+                            }
+
+                            for(let i = 0; i < tempPositions.length; ++i)
+                            {
+                                const pos = tempPositions[i];
+                                // Don't bother pushing the position if it's the same as the cursor
+                                // if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
+                                {
+                                    positions.push(pos);
+                                }
+                            }
+                            break;
+                        }
+                        }
+
+                        tokenStart = null;
+                    }
                 }
-                else if (!isValidIdentifierCharacter(c))
+
+                if (tokenStart)
                 {
                     const pos = new Position();
                     pos.line = lineIndex;
-                    pos.offset = context.searchMode ? i : currentIdentifierStart;
+                    pos.offset = tokenStart;
+                
+                    // Don't bother pushing the position if it's the same as the cursor
+                    if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
+                    {
+                        positions.push(pos);
+                    }
+                    tokenStart = null;
+                }
+
+                // If there were no words in the line and the line is non-empty, then add it as a jump position
+                if (!didFindAnyWords && config.AllowJumpingToWordlessLine)
+                {
+                    const pos = new Position();
+                    pos.line = lineIndex;
+                    pos.offset = line.text.length;
                     
                     // Don't bother pushing the position if it's the same as the cursor
                     if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
                     {
                         positions.push(pos);
                     }
-
-                    currentIdentifierStart = null;
-                }
-            }
-
-            if (currentIdentifierStart)
-            {
-                const pos = new Position();
-                pos.line = lineIndex;
-                pos.offset = currentIdentifierStart;
-                
-                // Don't bother pushing the position if it's the same as the cursor
-                if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
-                {
-                    positions.push(pos);
-                }
-                currentIdentifierStart = null;
-            }
-
-            // If there were no words in the line and the line is non-empty, then add it as a jump position
-            if (!didFindAnyWords && config.AllowJumpingToWordlessLine)
-            {
-                const pos = new Position();
-                pos.line = lineIndex;
-                pos.offset = line.text.length;
-                    
-                // Don't bother pushing the position if it's the same as the cursor
-                if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
-                {
-                    positions.push(pos);
                 }
             }
         }
-    }
 
-    // Tuned these keys by hands based on an American English keyboard.
-    // This is a good candidate for configuration so that we can better
-    // support other keyboard layouts.
-    const singleCharacterSet = 'fjrudkeislwoaqghtyp';
-    const doubleCharacterSet = 'vncmxzb,;\'[*+-';
+        // Tuned these keys by hands based on an American English keyboard.
+        // This is a good candidate for configuration so that we can better
+        // support other keyboard layouts.
+        const singleCharacterSet = 'fjrudkeislwoaqghtyp';
+        const doubleCharacterSet = 'vncmxzb,;\'[*+-';
 
-    const selection = editor.selection;
-    const sorted = positions.sort((a, b)=>
-    {
-        if (a.line === b.line)
+        const selection = editor.selection;
+        const sorted = positions.sort((a, b)=>
         {
-            const aDist = Math.abs(a.offset - selection.start.character);
-            const bDist = Math.abs(b.offset - selection.start.character);
+            if (a.line === b.line)
+            {
+                const aDist = Math.abs(a.offset - selection.start.character);
+                const bDist = Math.abs(b.offset - selection.start.character);
+                if (aDist < bDist) return -1;
+                if (bDist < aDist) return 1;
+                return 0;
+            }
+
+            const aDist = Math.abs(a.line - selection.start.line);
+            const bDist = Math.abs(b.line - selection.start.line);
             if (aDist < bDist) return -1;
             if (bDist < aDist) return 1;
             return 0;
-        }
+        });
 
-        const aDist = Math.abs(a.line - selection.start.line);
-        const bDist = Math.abs(b.line - selection.start.line);
-        if (aDist < bDist) return -1;
-        if (bDist < aDist) return 1;
-        return 0;
-    });
+        let singleCharIndex = 0;
+        let doubleCharIndex = -1;
 
-    let singleCharIndex = 0;
-    let doubleCharIndex = -1;
-
-    for(let i = 0; (i < positions.length) && (doubleCharIndex < doubleCharacterSet.length); ++i) 
-    {
-        let combo = '';
-        if (doubleCharIndex >= 0)
+        for(let i = 0; (i < positions.length) && (doubleCharIndex < doubleCharacterSet.length); ++i) 
         {
-            combo += doubleCharacterSet.charAt(doubleCharIndex);
+            let combo = '';
+            if (doubleCharIndex >= 0)
+            {
+                combo += doubleCharacterSet.charAt(doubleCharIndex);
+            }
+
+            combo += singleCharacterSet.charAt(singleCharIndex);
+
+            ++singleCharIndex;
+            if (singleCharIndex >= singleCharacterSet.length)
+            {
+                singleCharIndex = 0;
+                ++doubleCharIndex;
+            }
+            positions[i].combo = combo;
         }
 
-        combo += singleCharacterSet.charAt(singleCharIndex);
-
-        ++singleCharIndex;
-        if (singleCharIndex >= singleCharacterSet.length)
-        {
-            singleCharIndex = 0;
-            ++doubleCharIndex;
-        }
-        positions[i].combo = combo;
+        return positions;
     }
-
-    return positions;
+    finally
+    {
+        console.log(`${(new Date().getTime() - start.getTime()) / 1000} seconds to generate candidate positions, ${positions.length} found`);
+    }
 }
 
 function clearDecorations(config: Configuration, editor: vscode.TextEditor)
@@ -300,10 +387,7 @@ export default async function processCommand(editor: vscode.TextEditor, config: 
     {
         if (editor)
         {
-            const start = new Date();
             let positions = findCandidatePositions(editor, context, config);
-            console.log(`${(new Date().getTime() - start.getTime()) / 1000} seconds to generate candidate positions, ${positions.length} found`);
-
             let filteredPositions = positions;
         
             do
@@ -366,6 +450,21 @@ export default async function processCommand(editor: vscode.TextEditor, config: 
                             context.searchMode = SearchMode.Count - 1;
                         }
                         positions = findCandidatePositions(editor, context, config);
+                    }
+                    else if (typeof key === 'string' && isCharNumber(key.charCodeAt(0)))
+                    {
+                        // Use 1-N for mode switching
+                        const num = key.charCodeAt(0) - 48 - 1;
+                        // console.log(`Number pressed - found ${num}, max == ${SearchMode.Count}`);
+                        if (num >= 0 && num < SearchMode.Count)
+                        {
+                            context.searchMode = num;
+                            if (context.searchMode < 0)
+                            {
+                                context.searchMode = SearchMode.Count - 1;
+                            }
+                            positions = findCandidatePositions(editor, context, config);
+                        }
                     }
                     else
                     {
