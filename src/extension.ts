@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-import processCommand, { ActiveCommandContext, Configuration } from './command';
+import processCommand, { ActiveCommandContext, Configuration, SearchMode } from './command';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -43,6 +43,14 @@ export function activate(context: vscode.ExtensionContext)
         vscode.commands.executeCommand('setContext', 'vscodeEasyMotionJumping', false);
     };
 
+    const switchSearchMode = (decrement: boolean)=>
+    {
+        if (commandContext)
+        {
+            commandContext.switchMode(decrement);
+        }
+    };
+
     const exitJump = ()=>
     {
         vscode.commands.executeCommand('setContext', 'vscodeEasyMotionJumping', false);
@@ -77,7 +85,7 @@ export function activate(context: vscode.ExtensionContext)
         if (editor)
         {
             commandContext = new ActiveCommandContext;
-            commandContext.usingEndOfWord = true;
+            commandContext.searchMode = SearchMode.TokenEnd;
             await startJump(editor, commandContext);
         }
         else
@@ -88,6 +96,9 @@ export function activate(context: vscode.ExtensionContext)
 
     // Cancel
     context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.cancelJump', exitJump));
+
+    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.incrementSearchMode', ()=>switchSearchMode(false)));
+    context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.decrementSearchMode', ()=>switchSearchMode(true)));
 
     // Backspace support (TODO: Is there a better way to detect this?)
     context.subscriptions.push(vscode.commands.registerCommand('vscode-easymotion.backspaceJumpMelody', ()=>

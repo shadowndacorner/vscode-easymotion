@@ -1,5 +1,15 @@
 import * as vscode from 'vscode';
 
+export enum SearchMode
+{
+    TokenStart,
+    TokenEnd,
+    // TODO: Later
+    // WordStart,
+    // WordEnd
+    Count
+}
+
 class Position
 {
     line = 0;
@@ -80,7 +90,7 @@ function findCandidatePositions(editor: vscode.TextEditor, context: ActiveComman
                 {
                     const pos = new Position();
                     pos.line = lineIndex;
-                    pos.offset = context.usingEndOfWord ? i : currentIdentifierStart;
+                    pos.offset = context.searchMode ? i : currentIdentifierStart;
                     
                     // Don't bother pushing the position if it's the same as the cursor
                     if (!(pos.line === editor.selection.start.line && pos.offset === editor.selection.start.character))
@@ -189,6 +199,8 @@ function decoratePositions(config: Configuration, context: ActiveCommandContext,
         }
     );
 
+    if (context.isEnteringFilter) return;
+
     const decorationsArray: vscode.DecorationOptions[] = [];
     const colors = ['#ff5555', 'yellow', 'lime', 'magenta'];
     for(let i = 0; i < positions.length; i++)
@@ -253,8 +265,30 @@ export class ActiveCommandContext
             this.keyPromiseResolver(null);
         }
     }
+
+    switchMode(decrement: boolean)
+    {
+        if (this.keyPromiseResolver)
+        {
+            if (decrement)
+            {
+                this.keyPromiseResolver('DECRMODE');
+                
+            }
+            else
+            {
+                this.keyPromiseResolver('INCRMODE');
+            }
+        }
+    }
     
-    usingEndOfWord = false;
+    isEnteringFilter = false;
+    
+    // NOTE: This has been added back to singleCharacterSet.  When implementing filters, do not forget to remove this from singleCharacterSet.
+    // Making this comment ridiculous so I don't miss it later. // filterToggleKey = 'f';
+
+    filter = '';
+    searchMode = SearchMode.TokenStart;
     keyPromiseResolver: ((pressed: string | number | null)=>void) | null = null;
     keyMelody = '';
 }
@@ -262,102 +296,152 @@ export class ActiveCommandContext
 
 export default async function processCommand(editor: vscode.TextEditor, config: Configuration, context: ActiveCommandContext)
 {
-    if (editor)
+    try
     {
-        const start = new Date();
-        const positions = findCandidatePositions(editor, context, config);
-        console.log(`${(new Date().getTime() - start.getTime()) / 1000} seconds to generate candidate positions, ${positions.length} found`);
-
-        let filteredPositions = positions;
-        
-        do
+        if (editor)
         {
-            // Decorate
-            clearDecorations(config, editor);
-            decoratePositions(config, context, editor, filteredPositions);
+            const start = new Date();
+            let positions = findCandidatePositions(editor, context, config);
+            console.log(`${(new Date().getTime() - start.getTime()) / 1000} seconds to generate candidate positions, ${positions.length} found`);
 
-            // Get a key
-            const key = await new Promise<string | number | null>((resolve, reject)=>
+            let filteredPositions = positions;
+        
+            do
             {
-                context.keyPromiseResolver = resolve;
-            });
+                // Decorate
+                clearDecorations(config, editor);
+                decoratePositions(config, context, editor, filteredPositions);
 
-            if (key === null)
-            {
-                filteredPositions = [];
-                break;
-            }
-
-            let found = false;
-
-            // If backspace...
-            if (key === -1)
-            {
-                if (context.keyMelody.length > 0)
+                // Get a key
+                const key = await new Promise<string | number | null>((resolve)=>
                 {
-                    found = true;
-                    context.keyMelody = context.keyMelody.substring(0, context.keyMelody.length - 1);
+                    context.keyPromiseResolver = resolve;
+                });
+
+                if (key === null)
+                {
+                    filteredPositions = [];
+                    break;
                 }
-            }
-            else
-            {
-                // Add key to melody
-                context.keyMelody += key;
 
-                for(const pos of filteredPositions)
+                let found = false;
+
+                // If backspace...
+                if (key === -1)
                 {
-                    if (pos.combo.startsWith(context.keyMelody.toLowerCase()))
+                    // If we're inputting the filter, backspace
+                    if (context.isEnteringFilter)
                     {
-                        found = true;
+                        if (context.filter.length === 0)
+                        {
+                            context.isEnteringFilter = false;
+                        }
+                        else
+                        {
+                            context.filter = context.filter.substring(0, context.filter.length - 1);
+                        }
                     }
-                }
-            }
-
-            if (found)
-            {
-                if (context.keyMelody.length > 0)
-                {
-                    filteredPositions = positions.filter((v)=>v.combo.startsWith(context.keyMelody.toLowerCase()));
+                    else
+                    {
+                        if (context.keyMelody.length > 0)
+                        {
+                            found = true;
+                            context.keyMelody = context.keyMelody.substring(0, context.keyMelody.length - 1);
+                        }
+                    }
                 }
                 else
                 {
-                    filteredPositions = positions;
+                    if (key === 'INCRMODE')
+                    {
+                        // Switch modes on tab pressed
+                        context.searchMode = (context.searchMode + 1) % SearchMode.Count;
+                        positions = findCandidatePositions(editor, context, config);
+                    }
+                    else if (key === 'DECRMODE')
+                    {
+                        context.searchMode = context.searchMode - 1;
+                        if (context.searchMode < 0)
+                        {
+                            context.searchMode = SearchMode.Count - 1;
+                        }
+                        positions = findCandidatePositions(editor, context, config);
+                    }
+                    else
+                    {
+                        context.keyMelody += key;
+                    }
+
+                    // if (key === context.filterToggleKey)
+                    // {
+                    //     context.isEnteringFilter = true;
+                    // }
+                    // else
+                    // {
+                    // Add key to melody
+
+                    for(const pos of filteredPositions)
+                    {
+                        if (pos.combo.startsWith(context.keyMelody.toLowerCase()))
+                        {
+                            found = true;
+                        }
+                    }
+                    // }
                 }
-            }
-            else 
-            {
-                context.keyMelody = context.keyMelody.substring(0, context.keyMelody.length - 1);
-            }
-        } while(filteredPositions.length > 1);
+
+                if (found)
+                {
+                    if (context.keyMelody.length > 0)
+                    {
+                        filteredPositions = positions.filter((v)=>v.combo.startsWith(context.keyMelody.toLowerCase()));
+                    }
+                    else
+                    {
+                        filteredPositions = positions;
+                    }
+                }
+                else 
+                {
+                    context.keyMelody = context.keyMelody.substring(0, context.keyMelody.length - 1);
+                }
+            } while(filteredPositions.length > 1);
         
-        clearDecorations(config, editor);
-
-        if (filteredPositions.length === 1)
-        {
-            const found = filteredPositions[0];
-
-            let selection;
-            if (isCharUpperAlpha(context.keyMelody.charCodeAt(context.keyMelody.length - 1)))
+            if (filteredPositions.length === 1)
             {
+                const found = filteredPositions[0];
+
+                let selection;
+                if (isCharUpperAlpha(context.keyMelody.charCodeAt(context.keyMelody.length - 1)))
+                {
                 // TODO: Do we want fancier logic here?
-                const startLine = editor.selection.start.line;
-                const startChar = editor.selection.start.character;
+                    const startLine = editor.selection.start.line;
+                    const startChar = editor.selection.start.character;
                 
-                const endLine = found.line;
-                const endChar = found.offset;
+                    const endLine = found.line;
+                    const endChar = found.offset;
 
-                selection = new vscode.Selection(startLine, startChar, endLine, endChar);
-            }
-            else
-            {
-                selection = new vscode.Selection(found.line, found.offset, found.line, found.offset);
-            }
+                    selection = new vscode.Selection(startLine, startChar, endLine, endChar);
+                }
+                else
+                {
+                    selection = new vscode.Selection(found.line, found.offset, found.line, found.offset);
+                }
 
-            editor.selection = selection;
+                editor.selection = selection;
+            }
+        }
+        else 
+        {
+        // TODO: Warn that a text editor needs to be active
         }
     }
-    else 
+    catch(err)
     {
-        // TODO: Warn that a text editor needs to be active
+        console.error(err);
+    }
+    finally
+    {
+        clearDecorations(config, editor);
     }
 }

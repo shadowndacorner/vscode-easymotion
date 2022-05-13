@@ -35,6 +35,14 @@
 			{
 				"title": "EasyMotion: Cancel Jump",
 				"command": "vscode-easymotion.cancelJump"
+			},
+			{
+				"title": "EasyMotion: Increment search mode",
+				"command": "vscode-easymotion.incrementSearchMode"
+			},
+			{
+				"title": "EasyMotion: Decrement search mode",
+				"command": "vscode-easymotion.decrementSearchMode"
 			}
 		],
 		"keybindings": [
@@ -56,6 +64,16 @@
 			{
 				"command": "vscode-easymotion.cancelJump",
 				"key": "escape",
+				"when": "vscodeEasyMotionJumping"
+			},
+			{
+				"command": "vscode-easymotion.incrementSearchMode",
+				"key": "tab",
+				"when": "vscodeEasyMotionJumping"
+			},
+			{
+				"command": "vscode-easymotion.decrementSearchMode",
+				"key": "shift+tab",
 				"when": "vscodeEasyMotionJumping"
 			}
 		],
