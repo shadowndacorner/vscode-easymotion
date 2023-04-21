@@ -329,6 +329,36 @@ function decoratePositions(config: Configuration, context: ActiveCommandContext,
     editor.setDecorations(config.Decoration, decorationsArray);
 }
 
+type DecorationStyles = {
+    colors: string[];
+    borderColor: string;
+    fontWeight: string;
+    width: string;
+};
+
+export type StylesConfiguration = DecorationStyles & {
+    [color in "dark" | "light"]: DecorationStyles;
+};
+
+export const DEFAULT_STYLES: StylesConfiguration = {
+    borderColor: '#cccccc',
+    fontWeight: 'bold',
+    colors: ['#ff5555', 'yellow', 'lime', 'magenta'],
+    width: '0px',
+    dark: {
+        colors: ['#ff5555', 'yellow', 'lime', 'magenta'],
+        borderColor: '#cccccc',
+        fontWeight: 'bold',
+        width: '0px'
+    },
+    light: {
+        colors: ['#ff5555', '#323D00', '#190096', '#750042'],
+        borderColor: '#cccccc',
+        fontWeight: 'bold',
+        width: '0px'
+    }
+};
+
 export class Configuration
 {
     constructor(unfocused: vscode.TextEditorDecorationType, decoration: vscode.TextEditorDecorationType, allowJumpToWordlessLine: boolean)
