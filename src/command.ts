@@ -289,7 +289,12 @@ function decoratePositions(config: Configuration, context: ActiveCommandContext,
     if (context.isEnteringFilter) return;
 
     const decorationsArray: vscode.DecorationOptions[] = [];
-    const colors = ['#ff5555', 'yellow', 'lime', 'magenta'];
+    const darkColors = config.Styles?.dark?.colors ?? DEFAULT_STYLES.dark.colors;
+    const lightColors = config.Styles?.light?.colors ?? DEFAULT_STYLES.light.colors;
+
+    const colorKind = vscode.window.activeColorTheme.kind;
+    const colors = (colorKind === vscode.ColorThemeKind.Light) ? lightColors : darkColors;
+
     for(let i = 0; i < positions.length; i++)
     {
         const pos = positions[i];
@@ -301,7 +306,7 @@ function decoratePositions(config: Configuration, context: ActiveCommandContext,
         // const textToDraw = pos.combo;
         const tgColor = colors[(pos.combo.length - valueToSub) % colors.length];
 
-        const styling = {
+        const baseStyling: vscode.ThemableDecorationAttachmentRenderOptions = {
             border: '0 0 0 2px',
             borderColor: '#cccccc',
             fontWeight: 'bold',
@@ -309,18 +314,28 @@ function decoratePositions(config: Configuration, context: ActiveCommandContext,
             color: tgColor,
             width: '0px'
         };
+        const darkStyling: vscode.ThemableDecorationAttachmentRenderOptions = {
+            ...baseStyling,
+            ...config.Styles?.dark ?? {},
+            color: tgColor
+        };
+        const lightStyling: vscode.ThemableDecorationAttachmentRenderOptions = {
+            ...baseStyling,
+            ...config.Styles?.dark ?? {},
+            color: tgColor
+        };
 
         decorationsArray.push({ range: new vscode.Range(pos.line, pos.offset, pos.line, pos.offset + textToDraw.length),
             renderOptions:
             {
                 dark: 
                 {
-                    before: styling
+                    before: darkStyling
                 },
                 light: 
                 {
-                    before: styling
-                }
+                    before: lightStyling
+                },
             }
         });
     }
@@ -361,16 +376,21 @@ export const DEFAULT_STYLES: StylesConfiguration = {
 
 export class Configuration
 {
-    constructor(unfocused: vscode.TextEditorDecorationType, decoration: vscode.TextEditorDecorationType, allowJumpToWordlessLine: boolean)
+    constructor(unfocused: vscode.TextEditorDecorationType, 
+        decoration: vscode.TextEditorDecorationType, 
+        allowJumpToWordlessLine: boolean,
+        styles: StylesConfiguration)
     {
         this.UnfocusedDecoration = unfocused;
         this.Decoration = decoration;
         this.AllowJumpingToWordlessLine = allowJumpToWordlessLine;
+        this.Styles = styles;
     }
 
     UnfocusedDecoration: vscode.TextEditorDecorationType;
     Decoration: vscode.TextEditorDecorationType;
     AllowJumpingToWordlessLine: boolean;
+    Styles: StylesConfiguration;
 }
 
 export class ActiveCommandContext
