@@ -85,6 +85,85 @@
 					"type": "boolean",
 					"default": true,
 					"description": "When enabled, lines that do not contain any words will include a jump point at the end of the line"
+				},
+				"vscode-easymotion.styles": {
+					"type": "object",
+					"title": "Decoration Styles",
+					"description": "Styles to apply to the jump points' labels. To set styles per color mode, use the 'dark' and 'light' properties. To set styles irrespective of color mode, use the unnested properties directly.",
+					"properties": {
+						"borderColor": { 
+							"type": "string", 
+							"default": "#cccccc" 
+						},
+						"fontWeight": { 
+							"type": "string", 
+							"default": "bold", 
+							"enum": ["bold", "normal", "100", "200", "300", "400", "500", "600", "700", "800", "900"]},
+						"colors": {
+							"title": "Jump point label colors", 
+							"description": "Colors to paint each jump point's label with. Each color in the array will be iterated through as the labels get longer.", 
+							"type": "array", 
+							"default": ["#ff5555", "yellow", "lime", "magenta"], 
+							"items": {
+								"type": "string"}
+							},
+						"width": {
+							"type": "string", 
+							"default": "0px"
+						},
+						"dark": {
+							"type": "object",
+							"title": "Decoration Styles for Dark Themes",
+							"properties": {
+								"borderColor": { 
+									"type": "string", 
+									"default": "#cccccc" 
+								},
+								"fontWeight": { 
+									"type": "string", 
+									"default": "bold", 
+									"enum": ["bold", "normal", "100", "200", "300", "400", "500", "600", "700", "800", "900"]},
+								"colors": {
+									"title": "Jump point label colors", 
+									"description": "Colors to paint each jump point's label with. Each color in the array will be iterated through as the labels get longer.", 
+									"type": "array", 
+									"default": ["#ff5555", "yellow", "lime", "magenta"], 
+									"items": {
+										"type": "string"}
+									},
+								"width": {
+									"type": "string", 
+									"default": "0px"
+								}
+							}
+						},
+						"light": {
+							"type": "object",
+							"title": "Decoration Styles for Light Themes",
+							"properties": {
+								"borderColor": { 
+									"type": "string", 
+									"default": "#cccccc" 
+								},
+								"fontWeight": { 
+									"type": "string", 
+									"default": "bold", 
+									"enum": ["bold", "normal", "100", "200", "300", "400", "500", "600", "700", "800", "900"]},
+								"colors": {
+									"title": "Jump point label colors", 
+									"description": "Colors to paint each jump point's label with. Each color in the array will be iterated through as the labels get longer.", 
+									"type": "array", 
+									"default": ["#ff5555", "#323D00", "#190096", "#750042"], 
+									"items": {
+										"type": "string"}
+									},
+								"width": {
+									"type": "string", 
+									"default": "0px"
+								}
+							}
+						}
+					}
 				}
 			}
 		}
