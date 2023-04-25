@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-import processCommand, { ActiveCommandContext, Configuration, SearchMode } from './command';
+import processCommand, { ActiveCommandContext, Configuration, DEFAULT_STYLES, SearchMode, StylesConfiguration } from './command';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -26,7 +26,8 @@ export function activate(context: vscode.ExtensionContext)
     (
         unfocusedTextDecoration,
         textDecoration,
-        vsConfigOptions.get<boolean>('allowJumpingToWordlessLines', true)
+        vsConfigOptions.get<boolean>('allowJumpingToWordlessLines', true),
+        vsConfigOptions.get<StylesConfiguration>('styles', DEFAULT_STYLES)
     );
     
     let commandContext : ActiveCommandContext | null = null;
