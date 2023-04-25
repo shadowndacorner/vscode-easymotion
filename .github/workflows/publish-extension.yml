@@ -19,8 +19,9 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 14.x
-    - run: npm install -g vsce
+    - run: npm install -g @vscode/vsce
     - run: npm install
+    - run: yarn install
     - name: Publish
       run: npm run deploy
       env:
